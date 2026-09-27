@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진동과 파동 시뮬레이션</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }
+        .tab-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .tab-btn {
+            background-color: white;
+            color: #4b5563;
+            border-color: #d1d5db;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-8">
+
+    <div class="max-w-6xl w-full flex flex-col gap-6">
+        
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-md p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">🌊 진동과 파동의 이해</h1>
+                <p class="text-gray-600 mt-2">입자 모형과 학생 모형을 통해 진동과 파동의 차이를 비교해 봅시다.</p>
+            </div>
+            <button id="togglePlayBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors flex items-center gap-2">
+                <svg id="playIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                <svg id="pauseIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                <span id="playBtnText">일시정지</span>
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-2 w-full justify-center">
+            <button onclick="switchTab('particle')" id="tab-particle" class="tab-btn active px-6 py-3 rounded-t-lg font-bold border-t border-l border-r transition-colors flex-1 sm:flex-none">
+                🧪 입자 모형 (분자/소리파)
+            </button>
+            <button onclick="switchTab('student')" id="tab-student" class="tab-btn px-6 py-3 rounded-t-lg font-bold border-t border-l border-r transition-colors flex-1 sm:flex-none">
+                🧑‍🤝‍🧑 학생 모형 (앉아일어서기)
+            </button>
+        </div>
+
+        <!-- Tab Content: Particle Model -->
+        <div id="content-particle" class="bg-blue-50/50 border border-blue-100 rounded-b-2xl rounded-tr-2xl shadow-md p-4 sm:p-6 flex flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Particle Vibration -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-800 text-center flex items-center justify-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500"></span> 1. 진동 (Vibration)
+                        </h2>
+                    </div>
+                    <div class="h-64 relative p-4 bg-gray-50">
+                        <canvas id="canvas-particle-vib"></canvas>
+                    </div>
+                    <div class="p-4 bg-white h-full">
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-500 font-bold">✓</span>
+                                <span><strong>정의:</strong> 제한된 공간 내에서 일어나는 반복적인 운동</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-500 font-bold">✓</span>
+                                <span><strong>예시:</strong> 산소 분자 내의 2개의 산소 원자가 서로 왕복 운동하는 모습</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Particle Wave (용수철 시뮬레이션) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200 relative">
+                        <h2 class="text-xl font-bold text-gray-800 text-center flex items-center justify-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span> 2. 파동 (용수철 횡파)
+                        </h2>
+                        <p class="text-xs text-center text-blue-600 mt-2 font-bold animate-pulse">💡 핸들을 위아래로 움직여 파동을 만드세요!</p>
+                    </div>
+                    <div class="h-80 relative flex flex-col">
+                        <!-- 캔버스 드래그를 위해 커서를 ns-resize로 변경 -->
+                        <canvas id="canvas-particle-wave" class="cursor-ns-resize flex-1 w-full h-full block bg-yellow-50"></canvas>
+                        
+                        <!-- Toolbar (녹화, 재생, 리본 등) -->
+                        <div class="absolute bottom-0 left-0 right-0 bg-white/95 border-t border-gray-200 p-2 flex flex-wrap gap-2 justify-between items-center text-sm shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                            <div class="flex items-center gap-2">
+                                <button id="btn-spring-record" class="flex items-center gap-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors font-medium border border-red-200">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> <span id="text-spring-record">녹화 시작</span>
+                                </button>
+                                <button id="btn-spring-play" class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors font-medium border border-gray-200">
+                                    ▶️ <span id="text-spring-play">재생</span>
+                                </button>
+                                <div class="flex items-center bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                                    <span class="px-2 text-gray-500 text-xs font-bold">배속</span>
+                                    <button class="spring-speed-btn px-2 py-1.5 hover:bg-white text-xs border-l border-gray-200 transition-colors" data-speed="0.25">0.25x</button>
+                                    <button class="spring-speed-btn px-2 py-1.5 hover:bg-white text-xs border-l border-gray-200 transition-colors" data-speed="0.5">0.5x</button>
+                                    <button class="spring-speed-btn px-2 py-1.5 bg-white font-bold text-xs border-l border-gray-200 transition-colors" data-speed="1">1x</button>
+                                    <button class="spring-speed-btn px-2 py-1.5 hover:bg-white text-xs border-l border-gray-200 transition-colors" data-speed="2">2x</button>
+                                </div>
+                            </div>
+                            <button id="btn-spring-ribbon" class="flex items-center gap-1 px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-md transition-colors font-bold border border-orange-200">
+                                🎀 리본 달기
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-white h-full">
+                        <ul class="space-y-2 text-gray-700 text-sm">
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-500 font-bold">✓</span>
+                                <span><strong>파동의 전파:</strong> 매질(용수철)은 제자리에서 진동만 하고 에너지가 옆으로 전달됩니다. 리본은 이동하지 않고 제자리 진동만 합니다.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-500 font-bold">✓</span>
+                                <span><strong>마루와 골:</strong> 파동에서 가장 높은 곳을 '마루', 가장 낮은 곳을 '골'이라고 합니다.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Student Model -->
+        <div id="content-student" class="hidden bg-green-50/50 border border-green-100 rounded-b-2xl rounded-tr-2xl rounded-tl-2xl sm:rounded-tl-none shadow-md p-4 sm:p-6 flex flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Student Vibration -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-800 text-center flex items-center justify-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-green-500"></span> 1. 진동 (학생 개인)
+                        </h2>
+                    </div>
+                    <div class="h-64 relative p-4 bg-gray-50">
+                        <canvas id="canvas-student-vib"></canvas>
+                    </div>
+                    <div class="p-4 bg-white h-full">
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span><strong>개념:</strong> 외부로 전달되지 않는 제자리에서의 반복 운동</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span><strong>예시:</strong> 학생 한 명이 수업 시간에 혼자 일어났다 앉았다를 반복하는 진동 운동</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Student Wave -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-4 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-800 text-center flex items-center justify-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-indigo-500"></span> 2. 파동 (어깨동무 파도타기)
+                        </h2>
+                    </div>
+                    <div class="h-64 relative p-4 bg-gray-50">
+                        <canvas id="canvas-student-wave"></canvas>
+                    </div>
+                    <div class="p-4 bg-white h-full">
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start gap-2">
+                                <span class="text-indigo-500 font-bold">✓</span>
+                                <span><strong>개념:</strong> 연결된 매질을 통해 움직임(에너지)이 차례대로 전달되는 현상</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-indigo-500 font-bold">✓</span>
+                                <span><strong>예시:</strong> 학생들이 어깨동무를 한 상태에서 한 학생이 일어났다 앉았다 하면, 자연스럽게 옆의 학생도 움직임을 반복하게 되어 차례대로 에너지가 전달되는 모습</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // App State
+        let isPlaying = true;
+        let globalTime = 0;
+        let lastTime = 0;
+        let animationFrameId;
+        
+        // 용수철 상태 변수
+        let spring = {
+            nodes: Array(100).fill(0).map(()=>({y:0, v:0})), // 노드 100개로 증가 (더 부드러운 표현)
+            isDragging: false,
+            dragY: 0,
+            handleY: 0, // 핸들 입력 스무딩용
+            showRibbon: false,
+            ribbonIdx: 50,      // 가운데 위치에 리본
+            recordState: 'idle', // 'idle', 'recording', 'playing'
+            recordedData: [],
+            recordTime: 0,
+            playTime: 0,
+            maxRecordTime: 0,
+            playSpeed: 1
+        };
+        
+        // Canvas Contexts
+        const canvases = {
+            pVib: document.getElementById('canvas-particle-vib'),
+            pWave: document.getElementById('canvas-particle-wave'),
+            sVib: document.getElementById('canvas-student-vib'),
+            sWave: document.getElementById('canvas-student-wave')
+        };
+        const ctxs = {
+            pVib: canvases.pVib.getContext('2d'),
+            pWave: canvases.pWave.getContext('2d'),
+            sVib: canvases.sVib.getContext('2d'),
+            sWave: canvases.sWave.getContext('2d')
+        };
+
+        
+        // 캔버스 내 마우스/터치 Y좌표 계산 (중앙 기준)
+        const getSpringMouseY = (e) => {
+            const rect = canvases.pWave.getBoundingClientRect();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return clientY - rect.top - canvases.pWave.height/2;
+        };
+        
+        const handleSpringDown = (e) => {
+            const rect = canvases.pWave.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clickX = clientX - rect.left;
+            
+            // 핸들(왼쪽 끝) 근처를 클릭했을 때만 드래그 시작
+            if (clickX < 80) {
+                spring.isDragging = true;
+                spring.dragY = getSpringMouseY(e);
+                
+                // 재생 중이었다면 강제 종료하여 사용자가 제어권 획득
+                if (spring.recordState === 'playing') {
+                    stopSpringPlay();
+                }
+            }
+        };
+
+        const handleSpringMove = (e) => {
+            if (!spring.isDragging) return;
+            // 위아래 드래그 범위 제한 (툴바를 가리지 않도록)
+            const maxDrag = canvases.pWave.height/2 - 50;
+            spring.dragY = Math.max(-maxDrag, Math.min(maxDrag, getSpringMouseY(e)));
+        };
+
+        const handleSpringUp = () => {
+            spring.isDragging = false;
+        };
+
+        // 용수철 캔버스 이벤트 연결
+        canvases.pWave.addEventListener('mousedown', handleSpringDown);
+        window.addEventListener('mousemove', handleSpringMove); // 부드러운 드래그를 위해 window에 연결
+        window.addEventListener('mouseup', handleSpringUp);
+
+        canvases.pWave.addEventListener('touchstart', (e) => {
+            if (e.target === canvases.pWave) {
+                e.preventDefault(); // 스크롤 방지
+                handleSpringDown(e);
+            }
+        }, {passive: false});
+        window.addEventListener('touchmove', handleSpringMove, {passive: false});
+        window.addEventListener('touchend', handleSpringUp);
+
+        // --- 툴바 버튼 이벤트 설정 ---
+        
+        // 1. 리본 버튼
+        document.getElementById('btn-spring-ribbon').addEventListener('click', (e) => {
+            spring.showRibbon = !spring.showRibbon;
+            if (spring.showRibbon) {
+                e.currentTarget.classList.replace('bg-orange-100', 'bg-orange-500');
+                e.currentTarget.classList.replace('text-orange-700', 'text-white');
+            } else {
+                e.currentTarget.classList.replace('bg-orange-500', 'bg-orange-100');
+                e.currentTarget.classList.replace('text-white', 'text-orange-700');
+            }
+        });
+
+        // 2. 녹화 버튼
+        document.getElementById('btn-spring-record').addEventListener('click', toggleSpringRecord);
+        function toggleSpringRecord() {
+            const btn = document.getElementById('btn-spring-record');
+            const txt = document.getElementById('text-spring-record');
+            
+            if (spring.recordState === 'recording') {
+                // 녹화 중지
+                spring.recordState = 'idle';
+                txt.innerText = '녹화 시작';
+                btn.classList.replace('bg-red-500', 'bg-red-100');
+                btn.classList.replace('text-white', 'text-red-700');
+                btn.querySelector('span').classList.remove('animate-pulse');
+            } else {
+                // 녹화 시작
+                spring.recordState = 'recording';
+                spring.recordedData = [];
+                spring.recordTime = 0;
+                txt.innerText = '녹화 중지';
+                btn.classList.replace('bg-red-100', 'bg-red-500');
+                btn.classList.replace('text-red-700', 'text-white');
+                btn.querySelector('span').classList.add('animate-pulse');
+                
+                stopSpringPlay(); // 재생 중이었다면 정지
+            }
+        }
+
+        // 3. 재생 버튼
+        document.getElementById('btn-spring-play').addEventListener('click', toggleSpringPlay);
+        function toggleSpringPlay() {
+            if (spring.recordState === 'playing') {
+                stopSpringPlay();
+            } else {
+                // 녹화 데이터가 없으면 시각적 경고
+                if (spring.recordedData.length === 0) {
+                    const btn = document.getElementById('btn-spring-record');
+                    btn.classList.add('ring-4', 'ring-red-300');
+                    setTimeout(() => btn.classList.remove('ring-4', 'ring-red-300'), 1000);
+                    return;
+                }
+                
+                if (spring.recordState === 'recording') toggleSpringRecord();
+                
+                spring.recordState = 'playing';
+                spring.playTime = 0;
+                spring.maxRecordTime = spring.recordedData[spring.recordedData.length-1].time;
+                
+                // 스프링 잔물결 초기화 (깔끔한 재생 시작)
+                spring.nodes.forEach(n => { n.y = 0; n.v = 0; });
+                spring.handleY = 0;
+                
+                const btn = document.getElementById('btn-spring-play');
+                document.getElementById('text-spring-play').innerText = '정지';
+                btn.classList.replace('bg-gray-100', 'bg-gray-700');
+                btn.classList.replace('text-gray-700', 'text-white');
+            }
+        }
+
+        function stopSpringPlay() {
+            if (spring.recordState !== 'playing') return;
+            spring.recordState = 'idle';
+            const btn = document.getElementById('btn-spring-play');
+            document.getElementById('text-spring-play').innerText = '재생';
+            btn.classList.replace('bg-gray-700', 'bg-gray-100');
+            btn.classList.replace('text-white', 'text-gray-700');
+        }
+
+        // 4. 배속 버튼들
+        document.querySelectorAll('.spring-speed-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // 버튼 스타일 리셋
+                document.querySelectorAll('.spring-speed-btn').forEach(b => {
+                    b.classList.remove('bg-white', 'font-bold');
+                    b.classList.add('hover:bg-white');
+                });
+                // 선택된 버튼 활성화
+                e.target.classList.add('bg-white', 'font-bold');
+                e.target.classList.remove('hover:bg-white');
+                
+                spring.playSpeed = parseFloat(e.target.dataset.speed);
+            });
+        });
+
+        // 시간에 따른 녹화 데이터(Y좌표) 보간 계산
+        function getRecordedY(time) {
+            if (spring.recordedData.length === 0) return 0;
+            if (time <= 0) return spring.recordedData[0].y;
+            if (time >= spring.maxRecordTime) return spring.recordedData[spring.recordedData.length-1].y;
+            
+            for (let i = 1; i < spring.recordedData.length; i++) {
+                if (spring.recordedData[i].time >= time) {
+                    let p1 = spring.recordedData[i-1];
+                    let p2 = spring.recordedData[i];
+                    let t = (time - p1.time) / (p2.time - p1.time);
+                    return p1.y + (p2.y - p1.y) * t;
+                }
+            }
+            return 0;
+        }
+
+
+        // Resize Canvas to fit container
+        function resizeCanvases() {
+            Object.values(canvases).forEach(canvas => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            });
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            const particleContent = document.getElementById('content-particle');
+            const studentContent = document.getElementById('content-student');
+            const particleTab = document.getElementById('tab-particle');
+            const studentTab = document.getElementById('tab-student');
+
+            if (tabId === 'particle') {
+                particleContent.classList.remove('hidden');
+                studentContent.classList.add('hidden');
+                particleTab.classList.add('active');
+                studentTab.classList.remove('active');
+            } else {
+                particleContent.classList.add('hidden');
+                studentContent.classList.remove('hidden');
+                particleTab.classList.remove('active');
+                studentTab.classList.add('active');
+            }
+            
+            // Re-calc dimensions because hidden elements have 0 width/height
+            setTimeout(resizeCanvases, 10);
+        }
+
+        // Play/Pause Logic
+        document.getElementById('togglePlayBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            const text = document.getElementById('playBtnText');
+            
+            if (isPlaying) {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                text.innerText = '일시정지';
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                text.innerText = '재생';
+            }
+        });
+
+        
+        // Helper to draw a circle
+        function drawCircle(ctx, x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // 1. Particle Vibration (O2 Molecule)
+        function drawParticleVibration(ctx, width, height, time) {
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Animation math: breathing mode oscillation
+            const amplitude = 30;
+            const frequency = 0.005;
+            const displacement = Math.sin(time * frequency) * amplitude;
+            
+            const atom1X = centerX - 50 + displacement;
+            const atom2X = centerX + 50 - displacement;
+            
+            // Draw bond (spring)
+            ctx.beginPath();
+            ctx.moveTo(atom1X, centerY);
+            ctx.lineTo(atom2X, centerY);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#9ca3af';
+            ctx.stroke();
+            
+            // Draw atoms (Oxygen)
+            drawCircle(ctx, atom1X, centerY, 25, '#ef4444'); // Red
+            drawCircle(ctx, atom2X, centerY, 25, '#ef4444');
+            
+            // Text label
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('O', atom1X, centerY + 5);
+            ctx.fillText('O', atom2X, centerY + 5);
+        }
+
+        // 2. 용수철 파동 (횡파) - 물리 업데이트 및 그리기
+        let physAccum = 0;
+        function drawSpringWave(ctx, width, height, realDeltaTime) {
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerY = height / 2 - 10; // 툴바 고려하여 살짝 위로
+            const spacingX = (width - 60) / (spring.nodes.length - 1);
+            
+            // --- 1. 물리 엔진 업데이트 ---
+            let simDelta = realDeltaTime;
+            if (spring.recordState === 'playing') simDelta *= spring.playSpeed;
+            
+            // 프레임 경과 시간에 맞춰 위치 기록
+            if (spring.recordState === 'recording') {
+                spring.recordTime += realDeltaTime;
+                spring.recordedData.push({ time: spring.recordTime, y: spring.nodes[0].y });
+            }
+
+            physAccum += simDelta;
+            const physStep = 16; // 물리 고정 스텝(안정성 확보)
+            
+            while (physAccum >= physStep) {
+                // 핸들(에너지 소스) 위치 결정
+                if (spring.recordState === 'playing') {
+                    spring.nodes[0].y = getRecordedY(spring.playTime);
+                    spring.handleY = spring.nodes[0].y;
+                    spring.playTime += physStep;
+                    if (spring.playTime > spring.maxRecordTime) {
+                        stopSpringPlay(); // 끝까지 재생하면 자동 정지
+                    }
+                } else if (spring.isDragging) {
+                    // 마우스 입력을 보간하여 적용 (빠르고 잦은 흔들림 방지)
+                    spring.handleY += (spring.dragY - spring.handleY) * 0.2; 
+                    spring.nodes[0].y = spring.handleY;
+                    spring.nodes[0].v = 0; // 핸들은 외부 힘에 의해 위치가 고정됨
+                } else {
+                    // 마우스를 놨을 때: 제자리로 "매우 부드럽게" 복귀 
+                    // (급격히 0으로 복귀하면 튕기는 충격으로 새로운 파동이 생기므로 서서히 감속시킴)
+                    spring.handleY *= 0.92; 
+                    spring.nodes[0].y = spring.handleY;
+                    spring.nodes[0].v = 0;
+                }
+
+                // 매질 간 힘 계산 (장력에 의한 인력)
+                const tension = 0.25; 
+                const damping = 0.995; // 파동이 끝까지 선명하게 가도록 기본 감쇠는 매우 약하게 설정
+                for (let i = 1; i < spring.nodes.length - 1; i++) {
+                    let force = tension * (spring.nodes[i-1].y + spring.nodes[i+1].y - 2 * spring.nodes[i].y);
+                    spring.nodes[i].v += force;
+                    spring.nodes[i].v *= damping;
+                }
+                
+                // 속도를 위치에 적용
+                for (let i = 1; i < spring.nodes.length - 1; i++) {
+                    spring.nodes[i].y += spring.nodes[i].v;
+                }
+                
+                // 오른쪽 끝 경계 처리: 스펀지 레이어(Sponge Layer) 적용
+                // 반사파(파동이 끝에 부딪혀 튕겨 돌아오는 현상)를 막아 지속적인 교란이 일어나는 것을 방지
+                const spongeSize = 25; // 오른쪽 끝 25개 노드에 걸쳐 에너지를 흡수
+                const len = spring.nodes.length;
+                for (let i = len - spongeSize; i < len; i++) {
+                    let progress = (i - (len - spongeSize)) / spongeSize; // 0부터 1까지 점진적 증가
+                    let spongeDamping = 1 - (progress * progress * 0.15); // 끝으로 갈수록 감쇠력(마찰)이 강해짐
+                    spring.nodes[i].v *= spongeDamping;
+                    spring.nodes[i].y *= (1 - (progress * 0.05)); // 위치도 서서히 중심(0)으로 유도하여 흡수
+                }
+                spring.nodes[len - 1].y = 0;
+                spring.nodes[len - 1].v = 0;
+                
+                physAccum -= physStep;
+            }
+
+            // --- 2. 렌더링: 배경 격자 (눈금선) ---
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            const gridSize = 25;
+            ctx.beginPath();
+            for (let x = 0; x <= width; x += gridSize) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, height);
+            }
+            for (let y = 0; y <= height; y += gridSize) {
+                ctx.moveTo(0, y); ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+            
+            // 중심 기준선
+            ctx.strokeStyle = '#9ca3af';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+            ctx.setLineDash([]); // 리셋
+
+            // --- 3. 렌더링: 마루와 골 탐색 및 그리기 ---
+            ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+            ctx.textAlign = 'center';
+            
+            // 양 끝을 제외하고 지역적 최고점/최저점을 찾습니다. (윈도우 탐색으로 노이즈 제거)
+            const checkWindow = 6;
+            for (let i = checkWindow; i < spring.nodes.length - checkWindow; i++) {
+                let y = spring.nodes[i].y;
+                let x = 40 + i * spacingX;
+                
+                // 마루 (위로 볼록. Y축은 아래가 +이므로 음수 값이 위쪽) - 진폭이 최소 15보다 커야 인정
+                if (y < -15) {
+                    let isCrest = true;
+                    for (let j = i - checkWindow; j <= i + checkWindow; j++) {
+                        if (spring.nodes[j].y < y) { isCrest = false; break; }
+                    }
+                    
+                    if (isCrest) {
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillText('마루', x, centerY + y - 18);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x, centerY + y);
+                        ctx.lineTo(x, centerY + y - 12);
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        
+                        drawCircle(ctx, x, centerY + y, 5, '#ef4444');
+                        
+                        i += checkWindow; // 중복 마커 방지
+                        continue;
+                    }
+                }
+                
+                // 골 (아래로 오목) - 진폭이 최소 15보다 커야 인정
+                if (y > 15) {
+                    let isTrough = true;
+                    for (let j = i - checkWindow; j <= i + checkWindow; j++) {
+                        if (spring.nodes[j].y > y) { isTrough = false; break; }
+                    }
+                    
+                    if (isTrough) {
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.fillText('골', x, centerY + y + 26);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x, centerY + y);
+                        ctx.lineTo(x, centerY + y + 12);
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        
+                        drawCircle(ctx, x, centerY + y, 5, '#3b82f6');
+                        
+                        i += checkWindow;
+                    }
+                }
+            }
+
+            // --- 4. 렌더링: 용수철 코일 그리기 ---
+            ctx.strokeStyle = '#64748b'; // 기본 색상
+            ctx.lineWidth = 3.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            
+            // 중앙을 관통하는 메인 라인 (직선 대신 2차 베지어 곡선으로 둥글고 매끄럽게 연결)
+            ctx.beginPath();
+            ctx.moveTo(40, centerY + spring.nodes[0].y);
+            for (let i = 0; i < spring.nodes.length - 1; i++) {
+                let xc = 40 + (i + 0.5) * spacingX;
+                let yc = centerY + (spring.nodes[i].y + spring.nodes[i+1].y) / 2;
+                let pX = 40 + i * spacingX;
+                let pY = centerY + spring.nodes[i].y;
+                
+                if (i === 0) {
+                    ctx.lineTo(xc, yc);
+                } else {
+                    ctx.quadraticCurveTo(pX, pY, xc, yc);
+                }
+            }
+            ctx.lineTo(40 + (spring.nodes.length - 1) * spacingX, centerY + spring.nodes[spring.nodes.length - 1].y);
+            ctx.stroke();
+            
+            // 용수철 느낌을 내기 위한 수직 코일 디테일
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < spring.nodes.length; i++) {
+                let x = 40 + i * spacingX;
+                let y = centerY + spring.nodes[i].y;
+                ctx.moveTo(x, y - 7);
+                ctx.lineTo(x, y + 7);
+            }
+            ctx.stroke();
+
+            // --- 5. 렌더링: 리본 그리기 ---
+            if (spring.showRibbon) {
+                let rx = 40 + spring.ribbonIdx * spacingX;
+                let ry = centerY + spring.nodes[spring.ribbonIdx].y;
+                
+                // 리본 몸체 (깃발 형태)
+                ctx.fillStyle = '#f97316';
+                ctx.fillRect(rx - 2, ry - 30, 4, 30);
+                
+                // 깃발 머리
+                ctx.beginPath();
+                ctx.moveTo(rx - 2, ry - 30);
+                ctx.lineTo(rx + 16, ry - 22);
+                ctx.lineTo(rx - 2, ry - 14);
+                ctx.fill();
+                
+                // 매달린 매듭
+                drawCircle(ctx, rx, ry, 6, '#ea580c');
+                
+                // 보조선 (제자리 진동 확인용 수직 안내선)
+                ctx.strokeStyle = 'rgba(249, 115, 22, 0.3)';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(rx, 0);
+                ctx.lineTo(rx, height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // --- 6. 렌더링: 조종 핸들 그리기 ---
+            let hx = 40;
+            let hy = centerY + spring.nodes[0].y;
+            
+            ctx.fillStyle = spring.isDragging ? '#10b981' : (spring.recordState === 'playing' ? '#f43f5e' : '#f59e0b');
+            ctx.beginPath();
+            ctx.roundRect(hx - 14, hy - 30, 28, 60, 6);
+            ctx.fill();
+            
+            // 핸들 그립 텍스처 (줄무늬 3개)
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fillRect(hx - 8, hy - 12, 16, 4);
+            ctx.fillRect(hx - 8, hy, 16, 4);
+            ctx.fillRect(hx - 8, hy + 12, 16, 4);
+
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // 초기 안내 텍스트 표시
+            if (!spring.isDragging && spring.recordState === 'idle' && Math.abs(spring.nodes[0].y) < 5) {
+                ctx.fillStyle = '#4b5563';
+                ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+                ctx.textAlign = 'left';
+                // 텍스트 배경
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillRect(hx + 18, hy - 10, 220, 24);
+                ctx.fillStyle = '#1f2937';
+                ctx.fillText('← 핸들을 잡고 위아래로 흔드세요', hx + 22, hy + 6);
+            }
+        }
+
+        // Helper to draw a simple student character
+        function drawStudent(ctx, x, y, isConnectedLeft, isConnectedRight, floorY) {
+            // Colors
+            const skinColor = '#fcd34d'; // yellow
+            const shirtColor = '#10b981'; // green
+            const pantsColor = '#1e3a8a'; // dark blue
+
+            // Head
+            drawCircle(ctx, x, y - 25, 12, skinColor);
+            
+            // Body
+            ctx.fillStyle = shirtColor;
+            ctx.beginPath();
+            ctx.roundRect(x - 12, y - 10, 24, 30, 4);
+            ctx.fill();
+            
+            /* 발바닥 위치(floorY)를 고정하여 무릎을 굽히고 앉는 효과 생성 */
+            ctx.fillStyle = pantsColor;
+            const bodyBottom = y + 20;
+            const targetFloor = floorY || (y + 40); // floorY가 전달되지 않으면 기본값 사용
+            const legHeight = Math.max(targetFloor - bodyBottom, 5); // 몸이 내려오면 다리 길이가 줄어듦
+            
+            // Legs
+            ctx.fillRect(x - 8, bodyBottom, 6, legHeight);
+            ctx.fillRect(x + 2, bodyBottom, 6, legHeight);
+            
+            // Arms (어깨동무)
+            ctx.strokeStyle = skinColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            
+            if (isConnectedLeft) {
+                ctx.beginPath();
+                ctx.moveTo(x - 12, y - 5);
+                ctx.lineTo(x - 30, y - 5);
+                ctx.stroke();
+            }
+            if (isConnectedRight) {
+                ctx.beginPath();
+                ctx.moveTo(x + 12, y - 5);
+                ctx.lineTo(x + 30, y - 5);
+                ctx.stroke();
+            }
+        }
+
+        // 3. Student Vibration (One student sitting/standing)
+        function drawStudentVibration(ctx, width, height, time) {
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const floorY = centerY + 60; // 발이 닿는 고정된 바닥 위치
+            
+            // Sitting/Standing oscillation (vertical)
+            const amplitude = 35; // 앉는 깊이
+            const frequency = 0.005;
+            
+            // 점프하지 않고 아래로만 앉도록 sin 값을 0 ~ 1로 변환
+            const normalizedSine = (Math.sin(time * frequency) + 1) / 2;
+            const displacement = normalizedSine * amplitude; 
+            
+            const studentY = centerY + displacement;
+            
+            drawStudent(ctx, centerX, studentY, false, false, floorY);
+            
+            // Draw floor
+            ctx.beginPath();
+            ctx.moveTo(centerX - 50, floorY);
+            ctx.lineTo(centerX + 50, floorY);
+            ctx.strokeStyle = '#d1d5db';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+
+        // 4. Student Wave (Linked students doing a stadium wave)
+        function drawStudentWave(ctx, width, height, time) {
+            ctx.clearRect(0, 0, width, height);
+            
+            const cols = Math.floor(width / 50); // number of students based on width
+            const startX = (width - ((cols - 1) * 50)) / 2;
+            const centerY = height / 2;
+            const floorY = centerY + 60; // 발이 닿는 고정된 바닥 위치
+            
+            const amplitude = 35; // 앉는 깊이
+            const frequency = 0.005;
+            const waveNumber = 0.5; // Phase delay between students
+            
+            for (let i = 0; i < cols; i++) {
+                const x = startX + i * 50;
+                // Energy transfers from left to right, creating phase delay
+                const phase = i * waveNumber;
+                
+                // 점프가 아닌 앉았다 일어서기로 변환
+                const normalizedSine = (Math.sin(time * frequency - phase) + 1) / 2;
+                const displacement = normalizedSine * amplitude;
+                const studentY = centerY + displacement;
+                
+                // Determine if they are connected (어깨동무)
+                const connectedLeft = i > 0;
+                const connectedRight = i < cols - 1;
+                
+                // Draw arms connecting to adjacent students depending on their current heights
+                if (connectedRight) {
+                    const nextPhase = (i + 1) * waveNumber;
+                    const nextNormalizedSine = (Math.sin(time * frequency - nextPhase) + 1) / 2;
+                    const nextDisplacement = nextNormalizedSine * amplitude;
+                    const nextStudentY = centerY + nextDisplacement;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x + 12, studentY - 5); // Right shoulder of current
+                    ctx.lineTo(x + 50 - 12, nextStudentY - 5); // Left shoulder of next
+                    ctx.strokeStyle = '#fcd34d';
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                }
+
+                // Draw student body
+                drawStudent(ctx, x, studentY, false, false, floorY); // Arms drawn custom above
+            }
+            
+             // Draw energy source hint (the first student)
+             ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+             ctx.beginPath();
+             ctx.arc(startX, centerY + 15, 45, 0, Math.PI*2);
+             ctx.fill();
+             ctx.fillStyle = '#ef4444';
+             ctx.font = '11px sans-serif';
+             ctx.textAlign = 'center';
+             ctx.fillText('에너지 투입', startX, centerY - 40);
+        }
+
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let delta = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // 메인 일시정지 토글과 관계된 델타 타임
+            let physDelta = isPlaying ? delta : 0;
+            
+            if (isPlaying) {
+                globalTime += delta; 
+            }
+            
+            // Draw all visible canvases
+            if (canvases.pVib.offsetParent !== null) {
+                drawParticleVibration(ctxs.pVib, canvases.pVib.width, canvases.pVib.height, globalTime);
+                drawSpringWave(ctxs.pWave, canvases.pWave.width, canvases.pWave.height, physDelta);
+            }
+            
+            if (canvases.sVib.offsetParent !== null) {
+                drawStudentVibration(ctxs.sVib, canvases.sVib.width, canvases.sVib.height, globalTime);
+                drawStudentWave(ctxs.sWave, canvases.sWave.width, canvases.sWave.height, globalTime);
+            }
+            
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // Init
+        window.onload = () => {
+            resizeCanvases();
+            animationFrameId = requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
